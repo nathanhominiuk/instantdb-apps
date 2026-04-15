@@ -15,6 +15,54 @@ export interface ParsedICSCalendar {
   events: ParsedICSEvent[];
 }
 
+/** Map non-standard / deprecated timezone IDs to IANA equivalents */
+const TIMEZONE_ALIASES: Record<string, string> = {
+  "US/Pacific": "America/Los_Angeles",
+  "US/Eastern": "America/New_York",
+  "US/Central": "America/Chicago",
+  "US/Mountain": "America/Denver",
+  "US/Hawaii": "Pacific/Honolulu",
+  "US/Alaska": "America/Anchorage",
+  "US/Arizona": "America/Phoenix",
+  "Canada/Pacific": "America/Vancouver",
+  "Canada/Eastern": "America/Toronto",
+  "Canada/Central": "America/Winnipeg",
+  "Canada/Mountain": "America/Edmonton",
+  PST8PDT: "America/Los_Angeles",
+  MST7MDT: "America/Denver",
+  CST6CDT: "America/Chicago",
+  EST5EDT: "America/New_York",
+  EST: "America/New_York",
+  MST: "America/Phoenix",
+  HST: "Pacific/Honolulu",
+  "Europe/Belfast": "Europe/London",
+};
+
+/**
+ * Resolve a TZID to an IANA timezone, handling aliases and GMT offset patterns.
+ * Returns undefined if the timezone cannot be resolved.
+ */
+function resolveTimezone(tzid: string): string | undefined {
+  // Check aliases first
+  if (TIMEZONE_ALIASES[tzid]) return TIMEZONE_ALIASES[tzid];
+
+  // Handle GMT+/-HHMM offset patterns (e.g. "GMT-0700", "GMT+0530")
+  const gmtMatch = tzid.match(/^GMT([+-])(\d{2})(\d{2})$/);
+  if (gmtMatch) {
+    // Convert to Etc/GMT format (note: Etc/GMT sign is inverted per POSIX)
+    const hours = parseInt(gmtMatch[2], 10);
+    if (gmtMatch[3] === "00" && hours <= 14) {
+      const sign = gmtMatch[1] === "+" ? "-" : "+";
+      return `Etc/GMT${sign}${hours}`;
+    }
+    // For non-hour offsets, fall through to undefined
+    return undefined;
+  }
+
+  // Assume it's a valid IANA timezone
+  return tzid;
+}
+
 /** Unfold ICS lines: continuation lines start with a space or tab (RFC 5545 §3.1) */
 function unfoldLines(text: string): string {
   return text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
@@ -56,7 +104,7 @@ function parseICSDateTime(
     /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/
   );
   if (!match) {
-    return { time: 0, allDay: false };
+    return { time: NaN, allDay: false };
   }
 
   const [, yr, mo, dy, hr, mn, sc, utcFlag] = match;
@@ -75,10 +123,22 @@ function parseICSDateTime(
   }
 
   if (tzid) {
-    // Build a local date and convert from the specified timezone to UTC
-    const localDate = new Date(year, month, day, hour, minute, second);
-    const utcDate = fromZonedTime(localDate, tzid);
-    return { time: utcDate.getTime(), allDay: false };
+    const resolved = resolveTimezone(tzid);
+    if (resolved) {
+      try {
+        const localDate = new Date(year, month, day, hour, minute, second);
+        const utcDate = fromZonedTime(localDate, resolved);
+        const ts = utcDate.getTime();
+        if (!isNaN(ts)) return { time: ts, allDay: false };
+      } catch {
+        // Fall through to UTC interpretation
+      }
+    }
+    // Unresolvable timezone - treat as UTC
+    return {
+      time: Date.UTC(year, month, day, hour, minute, second),
+      allDay: false,
+    };
   }
 
   // Floating time (no timezone) - treat as UTC
@@ -143,7 +203,8 @@ function parseVEvent(lines: string[]): ParsedICSEvent | null {
     dtStartParsed.params["TZID"]
   );
 
-  if (startResult.time === 0) return null;
+  // Skip events with unparseable start times
+  if (!isFinite(startResult.time)) return null;
 
   // Determine allDay from VALUE=DATE parameter or from date format
   const isAllDay =
@@ -158,7 +219,9 @@ function parseVEvent(lines: string[]): ParsedICSEvent | null {
       dtEndParsed.value,
       dtEndParsed.params["TZID"]
     );
-    endTime = endResult.time || startResult.time + (isAllDay ? 86400000 : 3600000);
+    endTime = isFinite(endResult.time)
+      ? endResult.time
+      : startResult.time + (isAllDay ? 86400000 : 3600000);
   } else {
     // Default: all-day = +24h, timed = +1h
     endTime = startResult.time + (isAllDay ? 86400000 : 3600000);

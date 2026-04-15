@@ -9,8 +9,19 @@ export interface FeedSyncResult {
   eventCount: number;
 }
 
+/** Convert webcal:// protocol to https:// for fetching */
+function normalizeUrl(url: string): string {
+  if (url.startsWith("webcal://")) {
+    return url.replace(/^webcal:\/\//, "https://");
+  }
+  return url;
+}
+
+const BATCH_SIZE = 100;
+
 async function fetchICS(feedUrl: string): Promise<string> {
-  const proxyUrl = `/api/cors-proxy?url=${encodeURIComponent(feedUrl)}`;
+  const normalized = normalizeUrl(feedUrl);
+  const proxyUrl = `/api/cors-proxy?url=${encodeURIComponent(normalized)}`;
   const response = await fetch(proxyUrl);
 
   if (!response.ok) {
@@ -81,10 +92,15 @@ export async function syncFeed(feed: CalendarFeed): Promise<FeedSyncResult> {
       .link({ owner: personId })
   );
 
-  // Create events linked to calendar
+  // Transact person + calendar first (must exist before events can link)
+  await db.transact(txs);
+
+  // Create events linked to calendar in batches to avoid timeouts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let eventBatch: any[] = [];
   for (const event of parsed.events) {
     const eventId = id();
-    txs.push(
+    eventBatch.push(
       db.tx.events[eventId]
         .update({
           title: event.summary,
@@ -97,9 +113,15 @@ export async function syncFeed(feed: CalendarFeed): Promise<FeedSyncResult> {
         })
         .link({ calendar: calendarId })
     );
-  }
 
-  await db.transact(txs);
+    if (eventBatch.length >= BATCH_SIZE) {
+      await db.transact(eventBatch);
+      eventBatch = [];
+    }
+  }
+  if (eventBatch.length > 0) {
+    await db.transact(eventBatch);
+  }
 
   return { personId, calendarId, eventCount: parsed.events.length };
 }
