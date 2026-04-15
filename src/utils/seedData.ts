@@ -7,6 +7,9 @@ import { addDays, startOfWeek, addHours, setHours, setMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
 export async function seedDatabase() {
+  // Clear existing data first to avoid unique constraint violations
+  await clearDatabase();
+
   const now = new Date();
   const pacific = toZonedTime(now, PACIFIC_TZ);
 
