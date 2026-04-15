@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { findFreeWindows, formatFreeWindow } from "../../utils/freeTime";
+import { useSettings } from "../../contexts/SettingsContext";
 import type { CalendarEvent } from "../../types";
 
 interface FreeTimePanelProps {
@@ -13,6 +14,7 @@ export default function FreeTimePanel({
   rangeStartUTC,
   rangeEndUTC,
 }: FreeTimePanelProps) {
+  const { settings } = useSettings();
   const windows = useMemo(
     () => findFreeWindows(events, rangeStartUTC, rangeEndUTC),
     [events, rangeStartUTC, rangeEndUTC]
@@ -20,7 +22,7 @@ export default function FreeTimePanel({
 
   if (windows.length === 0) {
     return (
-      <div className="p-3 text-sm text-gray-400 italic">
+      <div className="p-3 text-sm text-gray-400 dark:text-gray-500 italic">
         No free windows found in this range.
       </div>
     );
@@ -31,10 +33,10 @@ export default function FreeTimePanel({
       {windows.slice(0, 10).map((w, i) => (
         <div
           key={i}
-          className="px-3 py-2 rounded-md bg-green-50 border border-green-100 text-xs text-green-800"
+          className="px-3 py-2 rounded-md bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800 text-xs text-green-800 dark:text-green-300"
           data-testid="free-time-slot"
         >
-          <div className="font-medium">{formatFreeWindow(w)}</div>
+          <div className="font-medium">{formatFreeWindow(w, settings.timeFormat)}</div>
         </div>
       ))}
     </div>

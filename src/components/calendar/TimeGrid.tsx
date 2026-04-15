@@ -1,12 +1,14 @@
 import { useMemo, useRef, useEffect } from "react";
 import {
-  getHourLabels,
   getEventTopPercent,
   getEventHeightPercent,
   format,
 } from "../../utils/dateHelpers";
 import { toPacific, PACIFIC_TZ } from "../../utils/timezone";
 import { isToday } from "../../utils/dateHelpers";
+import { getHourLabelsFormatted } from "../../utils/formatters";
+import { computeCardStackLayout } from "../../utils/eventLayout";
+import { useSettings } from "../../contexts/SettingsContext";
 import EventBlock from "./EventBlock";
 import type { CalendarEvent } from "../../types";
 import { toZonedTime } from "date-fns-tz";
@@ -19,7 +21,8 @@ interface TimeGridProps {
 }
 
 export default function TimeGrid({ days, events, onEventClick, compact }: TimeGridProps) {
-  const hours = getHourLabels();
+  const { settings } = useSettings();
+  const hours = getHourLabelsFormatted(settings.timeFormat);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll to 7am on mount
@@ -75,23 +78,23 @@ export default function TimeGrid({ days, events, onEventClick, compact }: TimeGr
   return (
     <div className="flex flex-col h-full" data-testid="time-grid">
       {/* Day headers */}
-      <div className="flex border-b border-gray-200 bg-white sticky top-0 z-10">
+      <div className="flex border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-10">
         <div className="w-16 flex-shrink-0" />
         {days.map((day) => {
           const today = isToday(day);
           return (
             <div
               key={format(day, "yyyy-MM-dd")}
-              className={`flex-1 text-center py-2 border-l border-gray-100 ${today ? "bg-blue-50" : ""}`}
+              className={`flex-1 text-center py-2 border-l border-gray-100 dark:border-gray-800 ${today ? "bg-blue-50 dark:bg-blue-900/30" : ""}`}
             >
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {compact ? format(day, "EEE") : format(day, "EEE")}
               </div>
               <div
                 className={`text-sm font-semibold ${
                   today
                     ? "bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center mx-auto"
-                    : "text-gray-900"
+                    : "text-gray-900 dark:text-gray-100"
                 }`}
               >
                 {format(day, "d")}
@@ -103,15 +106,15 @@ export default function TimeGrid({ days, events, onEventClick, compact }: TimeGr
 
       {/* All-day events row */}
       {hasAllDay && (
-        <div className="flex border-b border-gray-200 bg-gray-50/50">
-          <div className="w-16 flex-shrink-0 text-[10px] text-gray-400 px-2 py-1">
+        <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+          <div className="w-16 flex-shrink-0 text-[10px] text-gray-400 dark:text-gray-500 px-2 py-1">
             ALL DAY
           </div>
           {days.map((day) => {
             const key = format(day, "yyyy-MM-dd");
             const dayAllDay = allDayEvents.get(key) ?? [];
             return (
-              <div key={key} className="flex-1 border-l border-gray-100 p-0.5 space-y-0.5">
+              <div key={key} className="flex-1 border-l border-gray-100 dark:border-gray-800 p-0.5 space-y-0.5">
                 {dayAllDay.map((event) => (
                   <EventBlock
                     key={event.id}
@@ -134,7 +137,7 @@ export default function TimeGrid({ days, events, onEventClick, compact }: TimeGr
             {hours.map((label, i) => (
               <div
                 key={i}
-                className="absolute w-full text-right pr-2 text-[10px] text-gray-400"
+                className="absolute w-full text-right pr-2 text-[10px] text-gray-400 dark:text-gray-500"
                 style={{ top: `${i * 60}px`, height: "60px" }}
               >
                 <span className="relative -top-2">{label}</span>
@@ -149,12 +152,12 @@ export default function TimeGrid({ days, events, onEventClick, compact }: TimeGr
             const today = isToday(day);
 
             return (
-              <div key={key} className="flex-1 relative border-l border-gray-100">
+              <div key={key} className="flex-1 relative border-l border-gray-100 dark:border-gray-800">
                 {/* Hour lines */}
                 {hours.map((_, i) => (
                   <div
                     key={i}
-                    className="absolute w-full border-t border-gray-100"
+                    className="absolute w-full border-t border-gray-100 dark:border-gray-800"
                     style={{ top: `${i * 60}px`, height: "60px" }}
                   />
                 ))}
@@ -173,28 +176,39 @@ export default function TimeGrid({ days, events, onEventClick, compact }: TimeGr
                 )}
 
                 {/* Events */}
-                {dayEvents.map((event) => {
-                  const top = (getEventTopPercent(event.startTime) / 100) * 24 * 60;
-                  const height = Math.max(
-                    (getEventHeightPercent(event.startTime, event.endTime) / 100) * 24 * 60,
-                    20
-                  );
+                {(() => {
+                  const layoutMap = computeCardStackLayout(dayEvents);
+                  return dayEvents.map((event) => {
+                    const top = (getEventTopPercent(event.startTime) / 100) * 24 * 60;
+                    const height = Math.max(
+                      (getEventHeightPercent(event.startTime, event.endTime) / 100) * 24 * 60,
+                      20
+                    );
+                    const layout = layoutMap.get(event.id);
+                    const stackIndex = layout?.stackIndex ?? 0;
+                    const leftOffset = 2 + stackIndex * 20;
 
-                  return (
-                    <div
-                      key={event.id}
-                      className="absolute left-0.5 right-0.5 z-[5]"
-                      style={{ top: `${top}px`, height: `${height}px` }}
-                    >
-                      <EventBlock
-                        event={event}
-                        onClick={onEventClick}
-                        compact={height < 40}
-                        style={{ height: "100%" }}
-                      />
-                    </div>
-                  );
-                })}
+                    return (
+                      <div
+                        key={event.id}
+                        className="absolute right-0.5"
+                        style={{
+                          top: `${top}px`,
+                          height: `${height}px`,
+                          left: `${leftOffset}px`,
+                          zIndex: 5 + stackIndex,
+                        }}
+                      >
+                        <EventBlock
+                          event={event}
+                          onClick={onEventClick}
+                          compact={height < 40}
+                          style={{ height: "100%" }}
+                        />
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             );
           })}

@@ -2,6 +2,7 @@ import { StrictMode, Component, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
+import { SettingsProvider } from "./contexts/SettingsContext";
 
 class ErrorBoundary extends Component<
   { children: ReactNode },
@@ -18,14 +19,14 @@ class ErrorBoundary extends Component<
       return (
         <div className="h-full flex items-center justify-center p-8">
           <div className="text-center max-w-md">
-            <h1 className="text-xl font-bold text-red-600 mb-2">
+            <h1 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">
               Connection Error
             </h1>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Could not connect to InstantDB. Please check your app ID in the
               .env file.
             </p>
-            <pre className="text-xs text-left bg-gray-100 p-3 rounded overflow-auto">
+            <pre className="text-xs text-left bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-3 rounded overflow-auto">
               {this.state.error.message}
             </pre>
           </div>
@@ -39,7 +40,9 @@ class ErrorBoundary extends Component<
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <SettingsProvider>
+        <App />
+      </SettingsProvider>
     </ErrorBoundary>
   </StrictMode>
 );

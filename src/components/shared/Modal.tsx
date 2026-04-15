@@ -28,7 +28,7 @@ export default function Modal({ open, onClose, children }: ModalProps) {
         if (e.target === backdropRef.current) onClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
         {children}
       </div>
     </div>

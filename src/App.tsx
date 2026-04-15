@@ -2,8 +2,10 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import db from "./db";
 import Header from "./components/layout/Header";
 import Sidebar from "./components/layout/Sidebar";
+import RightPanel from "./components/layout/RightPanel";
 import CalendarView from "./components/calendar/CalendarView";
 import EventDetail from "./components/calendar/EventDetail";
+import { useSettings } from "./contexts/SettingsContext";
 import {
   getViewDateRange,
   getViewTitle,
@@ -13,9 +15,19 @@ import {
 import type { ViewType, CalendarEvent, Person } from "./types";
 
 export default function App() {
+  const { settings, updateSettings } = useSettings();
   const [view, setView] = useState<ViewType>("week");
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
+  // Apply theme class to document
+  useEffect(() => {
+    if (settings.theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [settings.theme]);
 
   // Query all data from InstantDB
   const { data } = db.useQuery({
@@ -126,7 +138,7 @@ export default function App() {
   }, [handlePrev, handleNext, handleToday]);
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
       <Header
         view={view}
         onViewChange={setView}
@@ -138,9 +150,8 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         <Sidebar
           people={people}
-          visibleEvents={allVisibleEvents}
-          rangeStartUTC={startUTC}
-          rangeEndUTC={endUTC}
+          collapsed={settings.leftPanelCollapsed}
+          onToggle={() => updateSettings({ leftPanelCollapsed: !settings.leftPanelCollapsed })}
         />
         <main className="flex-1 overflow-hidden">
           <CalendarView
@@ -151,6 +162,13 @@ export default function App() {
             onEventClick={setSelectedEvent}
           />
         </main>
+        <RightPanel
+          visibleEvents={allVisibleEvents}
+          rangeStartUTC={startUTC}
+          rangeEndUTC={endUTC}
+          collapsed={settings.rightPanelCollapsed}
+          onToggle={() => updateSettings({ rightPanelCollapsed: !settings.rightPanelCollapsed })}
+        />
       </div>
       <EventDetail
         event={selectedEvent}
