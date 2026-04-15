@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { id } from "@instantdb/react";
 
 export interface CalendarFeed {
   id: string;
@@ -7,6 +6,10 @@ export interface CalendarFeed {
   url: string;
   color: string;
   addedAt: number;
+  calendarId?: string;
+  personId?: string;
+  lastSyncedAt?: number;
+  syncError?: string;
 }
 
 export interface Settings {
@@ -48,8 +51,9 @@ function saveSettings(settings: Settings) {
 interface SettingsContextValue {
   settings: Settings;
   updateSettings: (partial: Partial<Settings>) => void;
-  addFeed: (feed: Omit<CalendarFeed, "id" | "addedAt">) => void;
+  addFeed: (feed: CalendarFeed) => void;
   removeFeed: (id: string) => void;
+  updateFeed: (id: string, updates: Partial<CalendarFeed>) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -65,25 +69,31 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setSettings((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const addFeed = useCallback((feed: Omit<CalendarFeed, "id" | "addedAt">) => {
+  const addFeed = useCallback((feed: CalendarFeed) => {
     setSettings((prev) => ({
       ...prev,
-      calendarFeeds: [
-        ...prev.calendarFeeds,
-        { ...feed, id: id(), addedAt: Date.now() },
-      ],
+      calendarFeeds: [...prev.calendarFeeds, feed],
     }));
   }, []);
 
-  const removeFeed = useCallback((id: string) => {
+  const removeFeed = useCallback((feedId: string) => {
     setSettings((prev) => ({
       ...prev,
-      calendarFeeds: prev.calendarFeeds.filter((f) => f.id !== id),
+      calendarFeeds: prev.calendarFeeds.filter((f) => f.id !== feedId),
+    }));
+  }, []);
+
+  const updateFeed = useCallback((feedId: string, updates: Partial<CalendarFeed>) => {
+    setSettings((prev) => ({
+      ...prev,
+      calendarFeeds: prev.calendarFeeds.map((f) =>
+        f.id === feedId ? { ...f, ...updates } : f
+      ),
     }));
   }, []);
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, addFeed, removeFeed }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, addFeed, removeFeed, updateFeed }}>
       {children}
     </SettingsContext.Provider>
   );
