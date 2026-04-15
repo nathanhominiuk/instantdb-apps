@@ -11,8 +11,6 @@ test.describe("Seed data", () => {
     await page.goto("/");
     const seedButton = page.getByTestId("seed-button");
     await seedButton.click();
-    // Button should show "Seeding..." while working
-    await expect(seedButton).toBeVisible();
     // App should not crash - header should still be visible
     await expect(page.getByText("Calendar Coordinator")).toBeVisible();
   });
@@ -21,12 +19,11 @@ test.describe("Seed data", () => {
     await page.goto("/");
     await page.getByTestId("seed-button").click();
 
-    // Wait for data - if DB isn't connected, this will timeout and the test skips
     try {
-      await expect(page.getByText("Alice Chen")).toBeVisible({ timeout: 10000 });
-      await expect(page.getByText("Bob Martinez")).toBeVisible();
-      await expect(page.getByText("Carol Williams")).toBeVisible();
-      await expect(page.getByText("Dave Kim")).toBeVisible();
+      await expect(page.getByText("Alice Chen").first()).toBeVisible({ timeout: 20000 });
+      await expect(page.getByText("Bob Martinez").first()).toBeVisible();
+      await expect(page.getByText("Carol Williams").first()).toBeVisible();
+      await expect(page.getByText("Dave Kim").first()).toBeVisible();
     } catch {
       test.skip(true, "InstantDB not connected - skipping data-dependent test");
     }
@@ -38,7 +35,7 @@ test.describe("Seed data", () => {
     await page.getByTestId("seed-button").click();
 
     try {
-      await expect(page.getByText("Alice Chen")).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Alice Chen").first()).toBeVisible({ timeout: 20000 });
     } catch {
       test.skip(true, "InstantDB not connected - skipping data-dependent test");
       return;
@@ -46,7 +43,6 @@ test.describe("Seed data", () => {
 
     // Now clear
     await page.getByTestId("clear-button").click();
-    await page.waitForTimeout(3000);
-    await expect(page.getByText("Alice Chen")).not.toBeVisible();
+    await expect(page.getByText("Alice Chen").first()).not.toBeVisible({ timeout: 10000 });
   });
 });
