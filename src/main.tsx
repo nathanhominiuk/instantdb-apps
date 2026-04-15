@@ -20,11 +20,10 @@ class ErrorBoundary extends Component<
         <div className="h-full flex items-center justify-center p-8">
           <div className="text-center max-w-md">
             <h1 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">
-              Connection Error
+              Application Error
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Could not connect to InstantDB. Please check your app ID in the
-              .env file.
+              An unexpected error occurred. See details below.
             </p>
             <pre className="text-xs text-left bg-gray-100 dark:bg-gray-800 dark:text-gray-300 p-3 rounded overflow-auto">
               {this.state.error.message}
