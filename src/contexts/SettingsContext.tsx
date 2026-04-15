@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { id } from "@instantdb/react";
 
 export interface CalendarFeed {
   id: string;
@@ -69,7 +70,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       ...prev,
       calendarFeeds: [
         ...prev.calendarFeeds,
-        { ...feed, id: crypto.randomUUID(), addedAt: Date.now() },
+        { ...feed, id: id(), addedAt: Date.now() },
       ],
     }));
   }, []);
