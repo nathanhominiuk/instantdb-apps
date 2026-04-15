@@ -1,4 +1,5 @@
-import { formatInPacific } from "../../utils/timezone";
+import { formatTime } from "../../utils/formatters";
+import { useSettings } from "../../contexts/SettingsContext";
 import type { CalendarEvent } from "../../types";
 
 interface EventBlockProps {
@@ -9,20 +10,22 @@ interface EventBlockProps {
 }
 
 export default function EventBlock({ event, onClick, style, compact }: EventBlockProps) {
+  const { settings } = useSettings();
   const color = event.calendar?.color ?? "#6366F1";
   const timeStr = event.allDay
     ? "All day"
-    : `${formatInPacific(event.startTime, "h:mm a")}`;
+    : formatTime(event.startTime, settings.timeFormat);
 
+  const bgOpacity = settings.theme === "dark" ? "30" : "18";
   return (
     <button
       onClick={() => onClick(event)}
       style={{
-        backgroundColor: `${color}18`,
+        backgroundColor: `${color}${bgOpacity}`,
         borderLeftColor: color,
         ...style,
       }}
-      className="w-full text-left border-l-3 rounded-r-md px-2 py-1 hover:brightness-95 transition-all cursor-pointer overflow-hidden group"
+      className="w-full text-left border-l-3 rounded-r-md px-2 py-1 hover:brightness-95 dark:hover:brightness-110 transition-all cursor-pointer overflow-hidden group"
       data-testid="event-block"
       title={event.title}
     >

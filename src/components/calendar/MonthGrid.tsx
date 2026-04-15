@@ -57,11 +57,11 @@ export default function MonthGrid({
   return (
     <div className="flex flex-col h-full" data-testid="month-grid">
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 border-b border-gray-200">
+      <div className="grid grid-cols-7 border-b border-gray-200 dark:border-gray-700">
         {weekdays.map((day) => (
           <div
             key={day}
-            className="text-center py-1.5 text-xs font-medium text-gray-500"
+            className="text-center py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400"
           >
             {compact ? day[0] : day}
           </div>
@@ -69,9 +69,9 @@ export default function MonthGrid({
       </div>
 
       {/* Day cells */}
-      <div className="flex-1 grid grid-rows-[repeat(auto-fill,minmax(0,1fr))]">
+      <div className="flex-1 grid" style={{ gridTemplateRows: `repeat(${weeks.length}, minmax(0, 1fr))` }}>
         {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 border-b border-gray-100 min-h-0">
+          <div key={wi} className="grid grid-cols-7 border-b border-gray-100 dark:border-gray-800 min-h-0">
             {week.map((day) => {
               const key = format(day, "yyyy-MM-dd");
               const dayEvents = eventsByDay.get(key) ?? [];
@@ -83,8 +83,8 @@ export default function MonthGrid({
               return (
                 <div
                   key={key}
-                  className={`border-l border-gray-100 first:border-l-0 p-0.5 min-h-0 overflow-hidden ${
-                    !inMonth ? "bg-gray-50/50" : ""
+                  className={`border-l border-gray-100 dark:border-gray-800 first:border-l-0 p-0.5 min-h-0 overflow-hidden ${
+                    !inMonth ? "bg-gray-50/50 dark:bg-gray-800/50" : ""
                   }`}
                 >
                   <div className="flex justify-center mb-0.5">
@@ -93,8 +93,8 @@ export default function MonthGrid({
                         today
                           ? "bg-blue-600 text-white font-semibold"
                           : inMonth
-                            ? "text-gray-700"
-                            : "text-gray-300"
+                            ? "text-gray-700 dark:text-gray-300"
+                            : "text-gray-300 dark:text-gray-600"
                       }`}
                     >
                       {format(day, "d")}
@@ -127,7 +127,7 @@ export default function MonthGrid({
                         />
                       ))}
                       {more > 0 && (
-                        <div className="text-[10px] text-gray-400 text-center">
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500 text-center">
                           +{more} more
                         </div>
                       )}

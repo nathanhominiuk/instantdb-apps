@@ -19,7 +19,7 @@ export default function PersonBadge({ name, color }: PersonBadgeProps) {
       >
         {initials}
       </div>
-      <span className="text-sm font-medium text-gray-700">{name}</span>
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{name}</span>
     </div>
   );
 }

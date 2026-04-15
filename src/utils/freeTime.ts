@@ -101,12 +101,16 @@ export function findFreeWindows(
   return windows.slice(0, maxResults);
 }
 
-export function formatFreeWindow(window: FreeWindow): string {
+export function formatFreeWindow(
+  window: FreeWindow,
+  timeFormat: "12h" | "24h" = "12h"
+): string {
   const start = toZonedTime(new Date(window.start), PACIFIC_TZ);
   const end = toZonedTime(new Date(window.end), PACIFIC_TZ);
   const dayStr = format(start, "EEE, MMM d");
-  const startStr = format(start, "h:mm a");
-  const endStr = format(end, "h:mm a");
+  const timePattern = timeFormat === "24h" ? "HH:mm" : "h:mm a";
+  const startStr = format(start, timePattern);
+  const endStr = format(end, timePattern);
   const hours = Math.floor(window.durationMinutes / 60);
   const mins = window.durationMinutes % 60;
   const durationStr =

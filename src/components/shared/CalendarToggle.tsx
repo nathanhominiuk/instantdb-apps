@@ -21,7 +21,7 @@ export default function CalendarToggle({
 
   return (
     <label
-      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer group"
+      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer group"
       data-testid={`calendar-toggle-${id}`}
     >
       <input
@@ -48,9 +48,9 @@ export default function CalendarToggle({
         )}
       </span>
       <div className="min-w-0">
-        <span className="text-sm text-gray-700 truncate block">{name}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300 truncate block">{name}</span>
         {ownerName && (
-          <span className="text-xs text-gray-400 truncate block">{ownerName}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 truncate block">{ownerName}</span>
         )}
       </div>
     </label>
