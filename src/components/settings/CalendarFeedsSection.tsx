@@ -251,7 +251,7 @@ export default function CalendarFeedsSection() {
                     </div>
                     {/* Sync status */}
                     {feed.syncError && !isFeedSyncing && (
-                      <div className="mt-1 text-[10px] text-red-500 dark:text-red-400 truncate" title={feed.syncError}>
+                      <div className="mt-1 text-[10px] text-red-500 dark:text-red-400 break-words">
                         Error: {feed.syncError}
                       </div>
                     )}
